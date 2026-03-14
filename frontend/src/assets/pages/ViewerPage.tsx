@@ -3,12 +3,14 @@ import { connectSignalServer } from "../utils/signals/signalSocket";
 import { SignalMessageType } from "../utils/signals/signalMessage";
 import { useSignalMessage } from "../hooks/useSignalMessage";
 import { useSocketHandler } from "../hooks/useSocketHandler";
+import { useWebRTCViewer } from "../hooks/useWebRTCViewer";
 
 export default function ViewerPage() {
 
   const [streamerIdInput, setStreamerIdInput] = useState("");
   const { joinStream } = useSignalMessage();
   const { setMessageHandler } = useSocketHandler();
+  const { createAnswerForOffer } = useWebRTCViewer();
 
   useEffect(() => {
     const socket = connectSignalServer();
@@ -21,12 +23,24 @@ export default function ViewerPage() {
   // add offer message receive event
   useEffect(() => {
     setMessageHandler((data) => {
-      if (data.type === SignalMessageType.OFFER) {
-        console.log("✅ Offer arrived from Streamer");
-        
-      }
+      const handleOffer = async () => {
+        if (
+          data.type === SignalMessageType.OFFER &&
+          data.message &&
+          data.sender
+        ) {
+          console.log("✅ Offer arrived from Streamer");
+
+          const offer: RTCSessionDescriptionInit = JSON.parse(data.message);
+          const answer = await createAnswerForOffer(offer, data.sender);
+
+          console.log("✅ Answer created", answer);
+        }
+      };
+
+      void handleOffer();
     });
-  }, [setMessageHandler]);
+  }, [setMessageHandler, createAnswerForOffer]);
 
 
 
