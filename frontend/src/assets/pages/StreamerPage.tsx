@@ -1,11 +1,14 @@
 import CameraPreview from "../components/CameraPreview";
 import StreamControls from "../components/StreamControls";
 import JoinRequestPanel from"../components/JoinRequestPanel";
+import ParticipatedViewerList from "../components/ParticipatedViewerList";
 
 import { useState, useEffect } from "react";
 import { useCamera } from "../hooks/useCamera"; 
 import { useSocketHandler } from "../hooks/useSocketHandler";
 import { useSignalMessage } from "../hooks/useSignalMessage";
+import { useWebRTCStreamer } from "../hooks/useWebRTCStreamer";
+
 import { setStreamerId } from "../utils/store/sessionStore";
 import { SignalMessageType } from "../utils/signals/signalMessage";
 
@@ -13,8 +16,12 @@ export default function StreamerPage() {
 
   const { stream, startCamera, stopCamera } = useCamera();
   const { connectSocket, setMessageHandler } = useSocketHandler();
-  const { registerStreamer } = useSignalMessage();
+  const { registerStreamer, offerViewer } = useSignalMessage();
+  const { createOfferForViewer } = useWebRTCStreamer(stream);
+
+
   const [joinRequests, setJoinRequests] = useState<string[]>([]);
+  const [participatedViewers, setParticipatedViewers] = useState<string[]>([]);
 
   // mock streamer ID
   useEffect(() => {
@@ -58,9 +65,18 @@ export default function StreamerPage() {
     }
   }
 
-  const acceptViewer = (viewerId: string) => {
+  const acceptViewer = async (viewerId: string) => {
     setJoinRequests((prev) => prev.filter((id) => id !== viewerId));
     console.log("✅ accept viewer", viewerId);
+
+    const offer =  await createOfferForViewer(viewerId);
+    if (!offer) return;
+    offerViewer(viewerId, offer);
+
+    setParticipatedViewers((prev) => {
+    if (prev.includes(viewerId)) return prev;
+    return [...prev, viewerId];
+  });
 
   };
 
@@ -89,12 +105,13 @@ export default function StreamerPage() {
         onStop={stopCamera}
       />
 
-
       <JoinRequestPanel
         requests={joinRequests}
         onAccept={acceptViewer}
         onReject={rejectViewer}
       />
+
+      <ParticipatedViewerList viewers={participatedViewers} />
 
       <CameraPreview stream={stream} />
     </div>

@@ -1,19 +1,33 @@
 import { useState, useEffect } from "react";
-import { connectSignalServer, sendSignalMessage } from "../utils/signals/signalSocket";
+import { connectSignalServer } from "../utils/signals/signalSocket";
 import { SignalMessageType } from "../utils/signals/signalMessage";
-
+import { useSignalMessage } from "../hooks/useSignalMessage";
+import { useSocketHandler } from "../hooks/useSocketHandler";
 
 export default function ViewerPage() {
 
   const [streamerIdInput, setStreamerIdInput] = useState("");
+  const { joinStream } = useSignalMessage();
+  const { setMessageHandler } = useSocketHandler();
 
   useEffect(() => {
     const socket = connectSignalServer();
-    if(!socket) {
+    if (!socket) {
       console.error("❌ Socket 연결 실패")
       return
     }
   }, [])
+
+  // add offer message receive event
+  useEffect(() => {
+    setMessageHandler((data) => {
+      if (data.type === SignalMessageType.OFFER) {
+        console.log("✅ Offer arrived from Streamer");
+        
+      }
+    });
+  }, [setMessageHandler]);
+
 
 
   const handleJoinStream = () => {
@@ -24,14 +38,11 @@ export default function ViewerPage() {
       return;
     }
 
-    sendSignalMessage({
-      type: SignalMessageType.JOIN_STREAM,
-      streamerId,
-    });
+    joinStream(streamerId);
 
     console.log("✅ JOIN_STREAM 전송:", streamerId);
   };
-  
+
   return (
     <div
       style={{

@@ -23,8 +23,14 @@ public class SignalingHandler extends TextWebSocketHandler {
     // streamerId -> streamer session
     private final Map<String, WebSocketSession> streamerSessions = new HashMap<>();
 
+    // viewerId -> viewer session
+    private final Map<String, WebSocketSession> viewerSessions = new HashMap<>();
+
     // viewer session -> streamerId
     private final Map<String, String> viewerMapping = new HashMap<>();
+
+    // Viewer SessionID -> Session
+    private final Map<String, WebSocketSession> sessions = new HashMap<>();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
@@ -41,17 +47,22 @@ public class SignalingHandler extends TextWebSocketHandler {
         switch (type) {
             case REGISTER_STREAMER -> {
                 String streamerId = payload.getStreamerId();
+                String streamerSessionId = session.getId();
                 streamerSessions.put(streamerId, session);
-                log.info("✅ streamer registered: {}, sessionId={}", streamerId, session.getId());
+                log.info("✅ streamer registered: {}, sessionId={}", streamerId, streamerSessionId);
             }
 
             case JOIN_STREAM -> {
-                String targetStreamer = payload.getStreamerId();
-                viewerMapping.put(session.getId(), targetStreamer);
-                log.info("✅ viewer({}) join request to {}", session.getId(), targetStreamer);
+                String streamerId = payload.getStreamerId();
+                String viewerSessionId = session.getId();
 
-                payload.setSender(session.getId());
-                WebSocketSession streamerSession = streamerSessions.get(targetStreamer);
+                viewerMapping.put(viewerSessionId, streamerId);
+                viewerSessions.put(viewerSessionId, session);
+
+                log.info("✅ viewer({}) join request to {}", viewerSessionId, streamerId);
+
+                payload.setSender(viewerSessionId);
+                WebSocketSession streamerSession = streamerSessions.get(streamerId);
                 if (streamerSession != null) {
                     streamerSession.sendMessage(
                             new TextMessage(objectMapper.writeValueAsString(payload))
@@ -71,7 +82,20 @@ public class SignalingHandler extends TextWebSocketHandler {
             }
 
             case OFFER -> {
-                log.info("webrtc signaling message received: type={}, payload={}", type, payload);
+                String streamerId = payload.getStreamerId();
+                String viewerSessionID = payload.getReceiver();
+                String streamerSessionId = streamerSessions.get(streamerId).getId();
+                WebSocketSession viewerSession = viewerSessions.get(viewerSessionID);
+
+                log.info("✅ streamer ({}) offered join to {}", streamerId, viewerSessionID);
+
+                payload.setSender(streamerSessionId);
+                if (viewerSession != null) {
+                    viewerSession.sendMessage(
+                            new TextMessage(objectMapper.writeValueAsString(payload))
+                    );
+                }
+
             }
 
             case ANSWER -> {

@@ -15,5 +15,6 @@ export interface SignalMessageDto {
   type: SignalMessageType
   streamerId?: string
   sender?: string
+  receiver?: string
   message?: string
 }

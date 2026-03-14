@@ -9,5 +9,6 @@ public class SignalMessageDto {
     private SignalMessageType type;
     private String streamerId;
     private String sender;
+    private String receiver;
     private String message;
 }

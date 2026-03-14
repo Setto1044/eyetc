@@ -14,7 +14,7 @@ export function connectSignalServer(): WebSocket | null {
     (socket.readyState === WebSocket.OPEN ||
       socket.readyState === WebSocket.CONNECTING)
   ) {
-    console.warn("⚠️ Already has Connect");
+    console.warn("⚠️ Already has Connected");
     return socket;
   }
 
