@@ -1,6 +1,6 @@
 import { useRef } from "react";
 
-export const useWebRTCStreamer = (stream: MediaStream | null) => {
+export const useWebRTCPeerConnection = (stream: MediaStream | null) => {
   const peerConnections = useRef<Map<string, RTCPeerConnection>>(new Map());
   const createOfferForViewer = async (viewerId: string) => {
     if (!stream) return;

@@ -7,7 +7,7 @@ import { useState, useEffect } from "react";
 import { useCamera } from "../hooks/useCamera"; 
 import { useSocketHandler } from "../hooks/useSocketHandler";
 import { useSignalMessage } from "../hooks/useSignalMessage";
-import { useWebRTCStreamer } from "../hooks/useWebRTCStreamer";
+import { useWebRTCPeerConnection } from "../hooks/useWebRTCPeerConnection";
 
 import { setStreamerId } from "../utils/store/sessionStore";
 import { SignalMessageType } from "../utils/signals/signalMessage";
@@ -17,7 +17,7 @@ export default function StreamerPage() {
   const { stream, startCamera, stopCamera } = useCamera();
   const { connectSocket, setMessageHandler } = useSocketHandler();
   const { registerStreamer, offerViewer } = useSignalMessage();
-  const { createOfferForViewer } = useWebRTCStreamer(stream);
+  const { createOfferForViewer } = useWebRTCPeerConnection(stream);
 
 
   const [joinRequests, setJoinRequests] = useState<string[]>([]);
