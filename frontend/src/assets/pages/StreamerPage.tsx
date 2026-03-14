@@ -1,47 +1,74 @@
 import CameraPreview from "../components/CameraPreview";
 import StreamControls from "../components/StreamControls";
-import { useEffect } from "react";
-import { useCamera } from "../hooks/UseCamera"
-import { connectSignalServer, sendSignalMessage } from "../utils/signals/signalSocket";
-import { SignalMessageType } from "../utils/signals/signalMessage";
-import { setStreamerId, getStreamerId } from "../utils/store/sessionStore";
+import JoinRequestPanel from"../components/JoinRequestPanel";
 
+import { useState, useEffect } from "react";
+import { useCamera } from "../hooks/useCamera"; 
+import { useSocketHandler } from "../hooks/useSocketHandler";
+import { useSignalMessage } from "../hooks/useSignalMessage";
+import { setStreamerId } from "../utils/store/sessionStore";
+import { SignalMessageType } from "../utils/signals/signalMessage";
 
 export default function StreamerPage() {
 
+  const { stream, startCamera, stopCamera } = useCamera();
+  const { connectSocket, setMessageHandler } = useSocketHandler();
+  const { registerStreamer } = useSignalMessage();
+  const [joinRequests, setJoinRequests] = useState<string[]>([]);
+
+  // mock streamer ID
   useEffect(() => {
     setStreamerId("streamer-test-1");
   }, []);
 
-  const { stream, startCamera, stopCamera } = useCamera();
+  // add viewer join request event
+  useEffect(() => {
+    setMessageHandler((data) => {
+      if(data.type === SignalMessageType.JOIN_STREAM && data.sender) {
+        setJoinRequests((prev) => {
+          if (prev.includes(data.sender!)) return prev;
+          return [...prev, data.sender!];
+        })
+      }
+    });
+  }), [setMessageHandler];
 
-  const handleStartStreaming = async () => {
+  const startStreaming = async() => {
     try {
+      // 1. camera
       await startCamera();
 
-      const socket = connectSignalServer();
-      if (!socket) return;
-
-      const streamerId = getStreamerId();
-      
-
-      const sendRegister = () => {
-        sendSignalMessage({
-          type: SignalMessageType.REGISTER_STREAMER,
-          streamerId: streamerId
-        });
-      };
-      
-      if (socket.readyState === WebSocket.OPEN) {
-        sendRegister();
-      } else {
-        socket.addEventListener("open", sendRegister, { once: true });
+      // 2. socket connect to signal server
+      const socket = connectSocket();
+      if(!socket) {
+        console.error("❌ No Socket Exist");
+        return
       }
 
-    } catch (error) {
-      console.error("failed to start streaming", error);
+      // 3. register streamer 
+      if (socket.readyState === WebSocket.OPEN) {
+        registerStreamer();
+      } else {
+        socket.addEventListener("open", registerStreamer, { once: true });
+      }
+
+
+    } catch(error) {
+      console.error("❌ failed to start streaming", error);
     }
   }
+
+  const acceptViewer = (viewerId: string) => {
+    setJoinRequests((prev) => prev.filter((id) => id !== viewerId));
+    console.log("✅ accept viewer", viewerId);
+
+  };
+
+  const rejectViewer = (viewerId: string) => {
+    setJoinRequests((prev) => prev.filter((id) => id !== viewerId));
+    console.log("✅ reject viewer", viewerId);
+  };
+
 
   return (
     <div
@@ -58,8 +85,15 @@ export default function StreamerPage() {
       <h1>Streamer</h1>
 
       <StreamControls
-        onStart={handleStartStreaming}
+        onStart={startStreaming}
         onStop={stopCamera}
+      />
+
+
+      <JoinRequestPanel
+        requests={joinRequests}
+        onAccept={acceptViewer}
+        onReject={rejectViewer}
       />
 
       <CameraPreview stream={stream} />

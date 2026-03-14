@@ -1,4 +1,6 @@
 let socket: WebSocket | null = null;
+let messageHandler: ((data: any) => void) | null = null;
+
 const SIGNAL_SERVER_URL = import.meta.env.VITE_SIGNAL_SERVER_URL as string;
 
 export function connectSignalServer(): WebSocket | null {
@@ -12,7 +14,7 @@ export function connectSignalServer(): WebSocket | null {
     (socket.readyState === WebSocket.OPEN ||
       socket.readyState === WebSocket.CONNECTING)
   ) {
-    console.warn("⚠️ Already has Connect")
+    console.warn("⚠️ Already has Connect");
     return socket;
   }
 
@@ -22,10 +24,16 @@ export function connectSignalServer(): WebSocket | null {
     console.log("✅ signal server connected");
   };
 
+
   socket.onmessage = (event: MessageEvent) => {
     try {
       const data = JSON.parse(event.data);
+
       console.log("signal message received:", data);
+
+      if (messageHandler) {
+        messageHandler(data);
+      }
     } catch (error) {
       console.error("❌ failed to parse signal message", error);
     }
@@ -47,7 +55,6 @@ export function getSocket(): WebSocket | null {
   return socket;
 }
 
-
 export function sendSignalMessage(payload: any) {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
     console.error("❌ socket not connected");
@@ -55,4 +62,8 @@ export function sendSignalMessage(payload: any) {
   }
 
   socket.send(JSON.stringify(payload));
+}
+
+export function setSignalMessageHandler(handler: (data: any) => void) {
+  messageHandler = handler;
 }
