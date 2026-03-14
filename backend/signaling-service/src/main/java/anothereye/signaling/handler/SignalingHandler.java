@@ -48,7 +48,9 @@ public class SignalingHandler extends TextWebSocketHandler {
             case JOIN_STREAM -> {
                 String targetStreamer = payload.getStreamerId();
                 viewerMapping.put(session.getId(), targetStreamer);
+                log.info("✅ viewer({}) join request to {}", session.getId(), targetStreamer);
 
+                payload.setSender(session.getId());
                 WebSocketSession streamerSession = streamerSessions.get(targetStreamer);
                 if (streamerSession != null) {
                     streamerSession.sendMessage(
