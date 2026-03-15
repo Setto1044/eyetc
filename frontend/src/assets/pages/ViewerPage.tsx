@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { connectSignalServer } from "../utils/signals/signalSocket";
 import { SignalMessageType } from "../utils/signals/signalMessage";
-import { useSignalMessage } from "../hooks/useSignalMessage";
+import { useSignalMessageSender } from "../hooks/useSignalMessageSender";
 import { useSocketHandler } from "../hooks/useSocketHandler";
 import { useWebRTCViewer } from "../hooks/useWebRTCViewer";
 
 export default function ViewerPage() {
 
   const [streamerIdInput, setStreamerIdInput] = useState("");
-  const { joinStream } = useSignalMessage();
+  const { joinStream, answerToOffer } = useSignalMessageSender();
   const { setMessageHandler } = useSocketHandler();
   const { createAnswerForOffer } = useWebRTCViewer();
 
@@ -33,8 +33,8 @@ export default function ViewerPage() {
 
           const offer: RTCSessionDescriptionInit = JSON.parse(data.message);
           const answer = await createAnswerForOffer(offer, data.sender);
-
-          console.log("✅ Answer created", answer);
+          answerToOffer(answer);
+          console.log("✅ Send Answer to Streamer");
         }
       };
 

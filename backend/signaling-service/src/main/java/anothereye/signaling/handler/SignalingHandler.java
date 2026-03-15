@@ -99,7 +99,23 @@ public class SignalingHandler extends TextWebSocketHandler {
             }
 
             case ANSWER -> {
-                log.info("webrtc signaling message received: type={}, payload={}", type, payload);
+                String viewerSessionId = session.getId();
+                String streamerId = viewerMapping.get(viewerSessionId);
+                String streamerSessionId = streamerSessions.get(streamerId).getId();
+
+
+                log.info("✅ Route Answer from {} to {}", viewerSessionId, streamerId);
+                log.info("answer : {}", payload.getMessage());
+                payload.setSender(viewerSessionId);
+                payload.setReceiver(streamerSessionId);
+                payload.setStreamerId(streamerId);
+
+                WebSocketSession streamerSession = streamerSessions.get(streamerId);
+                if (streamerSession != null) {
+                    streamerSession.sendMessage(
+                            new TextMessage(objectMapper.writeValueAsString(payload))
+                    );
+                }
             }
 
             case CANDIDATE -> {

@@ -6,39 +6,39 @@ import ParticipatedViewerList from "../components/ParticipatedViewerList";
 import { useState, useEffect } from "react";
 import { useCamera } from "../hooks/useCamera"; 
 import { useSocketHandler } from "../hooks/useSocketHandler";
-import { useSignalMessage } from "../hooks/useSignalMessage";
+import { useSignalMessageSender } from "../hooks/useSignalMessageSender";
+import { useSignalMessageHandler } from "../hooks/useSignalMessageHandler";
 import { useWebRTCStreamer } from "../hooks/useWebRTCStreamer";
 
 import { setStreamerId } from "../utils/store/sessionStore";
-import { SignalMessageType } from "../utils/signals/signalMessage";
 
 export default function StreamerPage() {
 
   const { stream, startCamera, stopCamera } = useCamera();
-  const { connectSocket, setMessageHandler } = useSocketHandler();
-  const { registerStreamer, offerViewer } = useSignalMessage();
-  const { createOfferForViewer } = useWebRTCStreamer(stream);
+  const { connectSocket } = useSocketHandler();
+  const { registerStreamer, offerViewer } = useSignalMessageSender();
+  const { createOfferForViewer, handleAnswer } = useWebRTCStreamer(stream);
 
 
   const [joinRequests, setJoinRequests] = useState<string[]>([]);
   const [participatedViewers, setParticipatedViewers] = useState<string[]>([]);
 
+
+useSignalMessageHandler({
+
+  onJoinRequest: (viewerId) => {
+    setJoinRequests((prev) => [...prev, viewerId]);
+  },
+
+  onAnswer: handleAnswer,
+
+  onCandidate: () => {}
+});
+
   // mock streamer ID
   useEffect(() => {
-    setStreamerId("streamer-test-1");
+    setStreamerId("test");
   }, []);
-
-  // add viewer join request event
-  useEffect(() => {
-    setMessageHandler((data) => {
-      if(data.type === SignalMessageType.JOIN_STREAM && data.sender) {
-        setJoinRequests((prev) => {
-          if (prev.includes(data.sender!)) return prev;
-          return [...prev, data.sender!];
-        })
-      }
-    });
-  }), [setMessageHandler];
 
   const startStreaming = async() => {
     try {

@@ -2,7 +2,7 @@ import { sendSignalMessage } from "../utils/signals/signalSocket";
 import { SignalMessageType } from "../utils/signals/signalMessage";
 import { getStreamerId } from "../utils/store/sessionStore";
 
-export const useSignalMessage = () => {
+export const useSignalMessageSender = () => {
   
   const registerStreamer = () => {
     sendSignalMessage({
@@ -30,10 +30,19 @@ export const useSignalMessage = () => {
     });
   };
 
+  const answerToOffer = (answer: RTCSessionDescriptionInit) => {
+    sendSignalMessage({
+      type: SignalMessageType.ANSWER,
+      streamerId: getStreamerId(),
+      message: JSON.stringify(answer),
+    });
+  }
+
 
   return {
     registerStreamer,
     offerViewer,
     joinStream,
+    answerToOffer,
   };
 };

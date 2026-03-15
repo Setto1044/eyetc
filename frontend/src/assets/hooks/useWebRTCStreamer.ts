@@ -16,5 +16,10 @@ export const useWebRTCStreamer = (stream: MediaStream | null) => {
     return offer;
   };
 
-  return { createOfferForViewer };
+  const handleAnswer = () => {
+    console.log("handle Answer!")
+  }
+
+
+  return { createOfferForViewer, handleAnswer };
 };
