@@ -1,14 +1,15 @@
 import CameraPreview from "../components/CameraPreview";
 import StreamControls from "../components/StreamControls";
-import JoinRequestPanel from"../components/JoinRequestPanel";
+import JoinRequestPanel from "../components/JoinRequestPanel";
 import ParticipatedViewerList from "../components/ParticipatedViewerList";
 
 import { useState, useEffect } from "react";
-import { useCamera } from "../hooks/useCamera"; 
+import { useCamera } from "../hooks/useCamera";
 import { useSocketHandler } from "../hooks/useSocketHandler";
 import { useSignalMessageSender } from "../hooks/useSignalMessageSender";
 import { useSignalMessageHandler } from "../hooks/useSignalMessageHandler";
 import { useWebRTCStreamer } from "../hooks/useWebRTCStreamer";
+import { addCandidateToPC } from "../utils/PeerConnectionManager";
 
 import { setStreamerId } from "../utils/store/sessionStore";
 
@@ -24,30 +25,29 @@ export default function StreamerPage() {
   const [participatedViewers, setParticipatedViewers] = useState<string[]>([]);
 
 
-useSignalMessageHandler({
+  // 소켓 메시지 타입에 따른 처리
+  useSignalMessageHandler({
 
-  onJoinRequest: (viewerId) => {
-    setJoinRequests((prev) => [...prev, viewerId]);
-  },
+    onJoinRequest: (viewerId) => { setJoinRequests((prev) => [...prev, viewerId]); },
 
-  onAnswer: handleAnswer,
+    onAnswer: handleAnswer,
 
-  onCandidate: () => {}
-});
+    onCandidate: (viewerId, candidate) => addCandidateToPC(viewerId, candidate),
+  });
 
   // mock streamer ID
   useEffect(() => {
     setStreamerId("test");
   }, []);
 
-  const startStreaming = async() => {
+  const startStreaming = async () => {
     try {
       // 1. camera
       await startCamera();
 
       // 2. socket connect to signal server
       const socket = connectSocket();
-      if(!socket) {
+      if (!socket) {
         console.error("❌ No Socket Exist");
         return
       }
@@ -60,7 +60,7 @@ useSignalMessageHandler({
       }
 
 
-    } catch(error) {
+    } catch (error) {
       console.error("❌ failed to start streaming", error);
     }
   }
@@ -69,14 +69,14 @@ useSignalMessageHandler({
     setJoinRequests((prev) => prev.filter((id) => id !== viewerId));
     console.log("✅ accept viewer", viewerId);
 
-    const offer =  await createOfferForViewer(viewerId);
+    const offer = await createOfferForViewer(viewerId);
     if (!offer) return;
     offerViewer(viewerId, offer);
 
     setParticipatedViewers((prev) => {
-    if (prev.includes(viewerId)) return prev;
-    return [...prev, viewerId];
-  });
+      if (prev.includes(viewerId)) return prev;
+      return [...prev, viewerId];
+    });
 
   };
 

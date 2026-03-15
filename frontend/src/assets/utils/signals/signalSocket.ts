@@ -29,7 +29,7 @@ export function connectSignalServer(): WebSocket | null {
     try {
       const data = JSON.parse(event.data);
 
-      console.log("signal message received:", data);
+      console.log("signal message received:", data.type);
 
       if (messageHandler) {
         messageHandler(data);

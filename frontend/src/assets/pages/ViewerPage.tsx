@@ -1,15 +1,14 @@
 import { useState, useEffect } from "react";
 import { connectSignalServer } from "../utils/signals/signalSocket";
-import { SignalMessageType } from "../utils/signals/signalMessage";
+import { useSignalMessageHandler } from "../hooks/useSignalMessageHandler"; 
 import { useSignalMessageSender } from "../hooks/useSignalMessageSender";
-import { useSocketHandler } from "../hooks/useSocketHandler";
 import { useWebRTCViewer } from "../hooks/useWebRTCViewer";
+import { addCandidateToPC } from "../utils/PeerConnectionManager";
 
 export default function ViewerPage() {
 
   const [streamerIdInput, setStreamerIdInput] = useState("");
   const { joinStream, answerToOffer } = useSignalMessageSender();
-  const { setMessageHandler } = useSocketHandler();
   const { createAnswerForOffer } = useWebRTCViewer();
 
   useEffect(() => {
@@ -20,27 +19,14 @@ export default function ViewerPage() {
     }
   }, [])
 
-  // add offer message receive event
-  useEffect(() => {
-    setMessageHandler((data) => {
-      const handleOffer = async () => {
-        if (
-          data.type === SignalMessageType.OFFER &&
-          data.message &&
-          data.sender
-        ) {
-          console.log("✅ Offer arrived from Streamer");
-
-          const offer: RTCSessionDescriptionInit = JSON.parse(data.message);
-          const answer = await createAnswerForOffer(offer, data.sender);
-          answerToOffer(answer);
-          console.log("✅ Send Answer to Streamer");
-        }
-      };
-
-      void handleOffer();
-    });
-  }, [setMessageHandler, createAnswerForOffer]);
+  useSignalMessageHandler({
+    onOffer: async (sender, offer) => {
+      const answer = await createAnswerForOffer(offer, sender);
+      answerToOffer(answer);
+    },
+    
+    onCandidate: (sender, candidate) => addCandidateToPC(sender, candidate),
+  });
 
 
 

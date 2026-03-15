@@ -38,11 +38,20 @@ export const useSignalMessageSender = () => {
     });
   }
 
+  const sendCandidate = (targetId: string, candidate: RTCIceCandidate) => {
+  sendSignalMessage({
+    type: SignalMessageType.CANDIDATE,
+    streamerId: getStreamerId(),
+    receiver: targetId,
+    message: JSON.stringify(candidate),
+  });
+};
 
   return {
     registerStreamer,
     offerViewer,
     joinStream,
     answerToOffer,
+    sendCandidate,
   };
 };
