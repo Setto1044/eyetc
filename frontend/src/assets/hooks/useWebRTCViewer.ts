@@ -1,7 +1,9 @@
 import { createPC } from "../utils/PeerConnectionManager";
 import { useSignalMessageSender } from "./useSignalMessageSender";
 
-export const useWebRTCViewer = () => {
+export const useWebRTCViewer = (
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+) => {
   const { sendCandidate } = useSignalMessageSender();
 
   const createAnswerForOffer = async (
@@ -11,10 +13,11 @@ export const useWebRTCViewer = () => {
     const pc = createPC(streamerSessionId, (candidate) => {
       sendCandidate(streamerSessionId, candidate);
     });
-    
+
     pc.ontrack = (event: RTCTrackEvent) => {
-      const remoteStream = event.streams[0];
-      console.log("✅ viewer received stream", remoteStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = event.streams[0];
+      }
     };
 
     await pc.setRemoteDescription(new RTCSessionDescription(offer));

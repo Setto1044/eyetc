@@ -35,6 +35,7 @@ public class SignalingHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) {
         log.info("connected: {}", session.getId());
+        sessions.put(session.getId(), session);
     }
 
     @Override
@@ -119,7 +120,15 @@ public class SignalingHandler extends TextWebSocketHandler {
             }
 
             case CANDIDATE -> {
-                log.info("webrtc signaling message received: type={}, payload={}", type, payload);
+                String receiverSessionId = payload.getReceiver();
+                payload.setSender(session.getId());
+
+                WebSocketSession receiverSession = sessions.get(receiverSessionId);
+                if (receiverSession != null) {
+                    receiverSession.sendMessage(
+                            new TextMessage(objectMapper.writeValueAsString(payload))
+                    );
+                }
             }
 
             default -> log.warn("unsupported message type: {}", type);

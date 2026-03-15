@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { connectSignalServer } from "../utils/signals/signalSocket";
-import { useSignalMessageHandler } from "../hooks/useSignalMessageHandler"; 
+import { useSignalMessageHandler } from "../hooks/useSignalMessageHandler";
 import { useSignalMessageSender } from "../hooks/useSignalMessageSender";
 import { useWebRTCViewer } from "../hooks/useWebRTCViewer";
 import { addCandidateToPC } from "../utils/PeerConnectionManager";
@@ -8,8 +8,10 @@ import { addCandidateToPC } from "../utils/PeerConnectionManager";
 export default function ViewerPage() {
 
   const [streamerIdInput, setStreamerIdInput] = useState("");
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   const { joinStream, answerToOffer } = useSignalMessageSender();
-  const { createAnswerForOffer } = useWebRTCViewer();
+  const { createAnswerForOffer } = useWebRTCViewer(videoRef);
 
   useEffect(() => {
     const socket = connectSignalServer();
@@ -24,7 +26,7 @@ export default function ViewerPage() {
       const answer = await createAnswerForOffer(offer, sender);
       answerToOffer(answer);
     },
-    
+
     onCandidate: (sender, candidate) => addCandidateToPC(sender, candidate),
   });
 
@@ -93,7 +95,10 @@ export default function ViewerPage() {
         </button>
       </div>
 
-      <div
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
         style={{
           width: "800px",
           height: "450px",
