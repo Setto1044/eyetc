@@ -33,6 +33,7 @@ dependencies {
 	//developmentOnly 'org.springframework.boot:spring-boot-docker-compose'
 	//runtimeOnly 'org.postgresql:postgresql'
 	//implementation 'org.springframework.boot:spring-boot-starter-data-redis-reactive'
+	implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 	annotationProcessor 'org.projectlombok:lombok'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'io.projectreactor:reactor-test'
